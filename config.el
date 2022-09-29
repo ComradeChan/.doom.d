@@ -2,8 +2,6 @@
 
 ;; Place your private configuration here! Remember, you do not need to run 'doom
 ;; sync' after modifying this file!
-
-
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets. It is optional.
 ;;(setq user-full-name "John Doe"
@@ -32,17 +30,19 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one)
+(setq doom-theme 'doom-snazzy)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
+;; Defines indent-guides
+(setq highlight-indent-guides-method 'column)
+
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/org/")
-
-
+(add-to-list 'load-path "~/.doom.d/custom/")
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
 ;;
@@ -50,7 +50,7 @@
 ;;     (setq x y))
 ;;
 ;; The exceptions to this rule:
-;
+                                        ;
 ;;   - Setting file/directory variables (like `org-directory')
 ;;   - Setting variables which explicitly tell you to set them before their
 ;;     package is loaded (see 'C-h v VARIABLE' to look up their documentation).
@@ -74,8 +74,101 @@
 ;;
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
-;;
+
+;; Minor mode stuff
+;; (define-minor-mode carpalx-compat-mode
+;;   "Overwrites annoying major mode binds"
+;;   :global true
+;;   (evil-define-key '(normal visual motion) 'carpalx-compat-mode
+;;     ;; stuff defined here will overwrite absolutley everything while carpalx-compat-mode is active. You have been warned
+;;     (kbd "h") 'evil-forward-char
+;;     (kbd "a") 'evil-backward-char
+;;     (kbd "e") 'evil-next-line
+;;     (kbd "o") 'evil-previous-line
+;;     (kbd "C-a") 'evil-backward-word-begin
+;;     (kbd "C-e") 'evil-forward-word-begin
+;;     (kbd "w") 'evil-forward-word-begin
+;;     (kbd "W") 'evil-forward-word-end)
+;;   (evil-define-key 'normal 'global
+;;     ;; binds defined here will only function during normal text editing
+;;     [C-i] 'evil-append
+;;     (kbd "E") 'evil-open-below
+;;     (kbd "O") 'evil-open-above
+;;     (kbd "za") '+fold/next
+;;     (kbd "ze") '+fold/previous
+;;     (kbd "U") 'undo-tree-visualize)
+;;   (evil-define-key 'motion 'carpalx-compat-mode
+;;     "gse" 'evilem-motion-next-line
+;;     "gso" 'evilem-motion-previous-line)
+;;   (evil-define-key 'normal 'global
+;;     (kbd "C-f") 'evil-scroll-line-down
+;;     (kbd "C-y") 'evil-scroll-line-up)
+;;   (evil-define-key 'normal 'dired
+;;     (kbd "C-c md") 'mkdir
+;;     (kbd "C-c dd") 'delete-directory)
+;;   (evil-define-key 'insert pdf-view-mode-map
+;;     (kbd "a") 'evil-collection-pdf-view-previous-line-or-previous-page
+;;     (kbd "e") 'evil-collection-pdf-view-next-line-or-next-page)
+;;   (evil-define-key 'normal dired-mode-map
+;;     (kbd "a") 'evil-backward-char
+;;     (kbd "e") 'evil-next-line
+;;     (kbd "o") 'evil-previous-line
+;;     (kbd "h") 'evil-forward-char)
+;;   ;; Keybinds for emacs mode
+;;   ;(define-key pdf-view-mode-map (kbd "a") 'pdf-view-previous-line-or-previous-page)
+;;   ;(define-key pdf-view-mode-map (kbd "e") 'pdf-view-next-line-or-next-page)
+;;   ;;Required modes for this to play nice
+;;   (evil-mode t))
+(require 'carpalx-compat-mode)
+;; Mode specific functions
+(evil-set-initial-state 'pdf-view-mode 'emacs)
+;;makes image mode not be a pain
 (define-key image-map (kbd "o") nil)
+
+;;enables disabled commands
+(defun enable-all-commands ()
+  "Enable all commands, reporting on which were disabled."
+  (interactive)
+  (with-output-to-temp-buffer "*Commands that were disabled*"
+    (mapatoms
+     (function
+      (lambda (symbol)
+        (when (get symbol 'disabled)
+          (put symbol 'disabled nil)
+          (prin1 symbol)
+          (princ "\n")))))))
+
+;; Thing for migrating notes to org-roam
+(defun org-roam-create-note-from-headline ()
+  "Create an Org-roam note from the current headline and jump to it.
+Normally, insert the headline’s title using the ’#title:’ file-level property
+and delete the Org-mode headline. However, if the current headline has a
+Org-mode properties drawer already, keep the headline and don’t insert
+‘#+title:'. Org-roam can extract the title from both kinds of notes, but using
+‘#+title:’ is a bit cleaner for a short note, which Org-roam encourages."
+  (interactive)
+  (let ((title (nth 4 (org-heading-components)))
+        (has-properties (org-get-property-block)))
+    (org-cut-subtree)
+    (org-roam-find-file title nil nil 'no-confirm)
+    (org-paste-subtree)
+    (unless has-properties
+      (kill-line)
+      (while (outline-next-heading)
+        (org-promote)))
+    (goto-char (point-min))
+    (when has-properties
+      (kill-line)
+      (kill-line))))
+
+;; package config stuff
+(use-package dirvish
+  ;;  :ensure t
+  :init
+  ;; Let Dirvish take over Dired globally
+  (dirvish-override-dired-mode))
+
+;; Leader key binds
 (map! :leader
       "wh" #'evil-window-right
       "wa" #'evil-window-left
@@ -87,50 +180,46 @@
       "wE" #'+evil/window-move-down
       "ws" #'ace-window
       "w/" #'evil-window-split
-      "As" #'eshell
-      "fd" #'dirvish)
-;; Minor mode stuff
-(define-minor-mode carpalx-compat-mode
-  "Overwrites annoying major mode binds"
-  :global true
-  (evil-define-key '(normal visual) 'carpalx-compat-mode ;; stuff defined here will overwrite absolutley everything while carpalx-compat-mode is active. You have been warned
-    (kbd "h") 'evil-forward-char
-    (kbd "a") 'evil-backward-char
-    (kbd "e") 'evil-next-line
-    (kbd "o") 'evil-previous-line
-    (kbd "C-a") 'evil-backward-word-begin
-    (kbd "C-e") 'evil-forward-word-begin)
-  (evil-define-key 'normal 'global ;; binds defined here will only function during normal text editing
-    (kbd "E") 'evil-open-below
-    (kbd "O") 'evil-open-above)
-  (evil-define-key 'motion 'global
-    (kbd "C-f") 'evil-scroll-line-down
-    (kbd "C-y") 'evil-scroll-line-up)
-  (evil-define-key 'normal 'dired
-    (kbd "C-c md") 'mkdir
-    (kbd "C-c dd") 'delete-directory)
-  )
-
+      "o-" #'dirvish
+      "oc" #'calc
+      "fd" #'dirvish
+      "op" #'pass
+      "th" #'hs-toggle-hiding
+      "tkm" #'carpalx-compat-mode)
+(map! :after dirvish
+      :map dirvish-mode-map
+      :localleader
+      "md" #'dired-create-directory)
+(map! :after 'pdf-view-mode-map
+      :map carpalx-compat-mode
+      (kbd "a") #'evil-collection-pdf-view-previous-line-or-previous-page
+      (kbd "e") #'evil-collection-pdf-view-next-line-or-next-page)
+(map! :after org
+      :map org-mode-map
+      :localleader
+      "bS" #'org-table-shrink
+      "bE" #'org-table-expand)
+;; Org-mode config
+(setq org-startup-folded t)
+(setq org-startup-shrink-all-tables t)
+(setq org-startup-align-all-tables t)
 ;;activating modes
-(carpalx-compat-mode 1)
-(ace-window-display-mode 1)
-(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+(carpalx-compat-mode t)
+(ace-window-display-mode t)
+;;(vimish-fold-global-mode t)
+(global-tree-sitter-mode t)
+(add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
+;;(global-org-modern-mode t)
+(vimish-fold-global-mode t)
+;; Functions for hooks
+(defun pdf-keymap-compatibility ()
+ ;; Takes Precedence over minor mode keymaps
+ (evil-local-set-key 'normal (kbd "a") 'pdf-view-previous-line-or-previous-page)
+ (evil-local-set-key 'normal (kbd "e") 'pdf-view-next-line-or-next-page)
+ )
+;;Hooks
+(add-hook!
+ 'global 'hs-minor-mode
+ 'pdf-view-mode-hook #'pdf-keymap-compatibility)
 
-;;enables disabled commands
-    (defun enable-all-commands ()
-      "Enable all commands, reporting on which were disabled."
-      (interactive)
-      (with-output-to-temp-buffer "*Commands that were disabled*"
-        (mapatoms
-         (function
-          (lambda (symbol)
-            (when (get symbol 'disabled)
-              (put symbol 'disabled nil)
-              (prin1 symbol)
-              (princ "\n")))))))
-;; package config stuff
-(use-package dirvish
-;;  :ensure t
-  :init
-  ;; Let Dirvish take over Dired globally
-  (dirvish-override-dired-mode))
+(server-start)

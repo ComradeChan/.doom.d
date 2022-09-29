@@ -48,3 +48,6 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;(unpin! t)
 (unpin! dirvish)
+;(package! org-modern)
+;(package! vundo)
+;(package! pdf-tools)
