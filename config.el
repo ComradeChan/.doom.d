@@ -31,7 +31,6 @@
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 (setq doom-theme 'doom-snazzy)
-
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
@@ -43,6 +42,8 @@
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/org/")
 (add-to-list 'load-path "~/.doom.d/custom/")
+;; (let ((default-directory (expand-file-name "~/.doom.d/custom/")))
+;;   (normal-top-level-add-subdirs-to-load-path))
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
 ;;
@@ -121,7 +122,7 @@
 ;;   (evil-mode t))
 (require 'carpalx-compat-mode)
 ;; Mode specific functions
-(evil-set-initial-state 'pdf-view-mode 'emacs)
+;;(evil-set-initial-state 'pdf-view-mode 'emacs)
 ;;makes image mode not be a pain
 (define-key image-map (kbd "o") nil)
 
@@ -203,13 +204,18 @@ Org-mode properties drawer already, keep the headline and don’t insert
 (setq org-startup-folded t)
 (setq org-startup-shrink-all-tables t)
 (setq org-startup-align-all-tables t)
+;; Vertico config
+ (setq read-file-name-completion-ignore-case t
+      read-buffer-completion-ignore-case t
+      completion-ignore-case t)
 ;;activating modes
 (carpalx-compat-mode t)
 (ace-window-display-mode t)
+;;(nano-modeline-mode t)
 ;;(vimish-fold-global-mode t)
 (global-tree-sitter-mode t)
 (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
-;;(global-org-modern-mode t)
+;(global-org-modern-mode t)
 (vimish-fold-global-mode t)
 ;; Functions for hooks
 (defun pdf-keymap-compatibility ()
@@ -221,5 +227,8 @@ Org-mode properties drawer already, keep the headline and don’t insert
 (add-hook!
  'global 'hs-minor-mode
  'pdf-view-mode-hook #'pdf-keymap-compatibility)
+;; Testing code
 
+
+;;Server Start
 (server-start)

@@ -22,6 +22,7 @@
     [C-i] 'evil-append
     (kbd "E") 'evil-open-below
     (kbd "O") 'evil-open-above
+    (kbd "gw") 'evil-surround-edit
     (kbd "za") '+fold/next
     (kbd "ze") '+fold/previous
     (kbd "U") 'undo-tree-visualize)
